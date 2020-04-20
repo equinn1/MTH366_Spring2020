@@ -1,0 +1,79 @@
+\documentclass{article}
+
+\begin{document}
+
+Bayesian simple regression
+
+<<>>=                                      #standard setup for Stan
+library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+@
+
+Generate artificial data that fits the model:
+
+\[
+y = \beta_0 + \beta_1\cdot x + e
+vspace{0.4 cm}
+\]
+where:
+\begin{itemize}
+\item $\beta_0$ = 15      (the intercept is 15)
+\item $\beta_1$ = 1.5     (the slope is 1.5)
+\item $\sigma_e$ = 25     (the error standard deviation is 25)
+\end{itemize}
+
+
+<<>>=                                   #generate artificial regression data
+N = 75                                  #sample size
+
+beta_0  =  15                           #intercept
+beta_1  =  1.5                          #slope
+
+sigma_e =  25                           #error standard deviation
+
+x = seq(N)                              #just generate sequential x values
+
+y = beta_0 + beta_1*x + rnorm(N,0,sigma_e)   #y = b_0 + b_1*x + e
+
+@
+
+Run a standard OLS simple regression
+
+<<>>=
+lm1 = lm(y~x)
+summary(lm1)
+@
+
+
+Run a Bayesian simple regression with stan
+
+<<>>=
+stanfit = stan("simple_regression.stan")         #call stan to fit the model
+
+print(stanfit)                           #print a summary of the results
+@
+
+Extract posterior draw values and compute 95\% credible intervals
+
+<<>>=
+
+pd=extract(stanfit)                      #extract the posterior draw values
+
+str(pd)                                  #show the structure of the posterior draw
+
+quantile(pd$beta[,1],c(.025,.5,.975))   #compute percentiles for draw from intercept
+quantile(pd$beta[,2],c(.025,.5,.975))   #compute percentiles for draw from slope
+quantile(pd$sigma,c(.025,.5,.975))      #compute percentiles for draw from sigma_e
+@
+
+It's a good practice to print the stan model file for reference in case it changes
+
+<<>>=
+print(get_stanmodel(stanfit))
+@
+
+<<>>=
+Sys.info()[["user"]]
+@
+\end{document}
